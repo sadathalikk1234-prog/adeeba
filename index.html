@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Listening Cat (Final Verified)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background-color: #1a1a1a; 
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center; 
+            align-items: center;
+            font-family: 'Indie Flower', cursive;
+        }
+
+        /* --- THE MAIN MOBILE CONTAINER --- */
+        .app-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 480px; 
+            background-color: #87CEEB; 
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0,0,0,0.5); 
+            opacity: 0; 
+            transition: opacity 3s ease;
+        }
+
+        .app-wrapper.visible {
+            opacity: 1;
+        }
+
+        /* --- TOP ICONS --- */
+        .top-icon-btn {
+            position: absolute;
+            top: 20px;
+            z-index: 3000; 
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+            user-select: none; 
+        }
+        .top-icon-btn:active { transform: scale(0.9); }
+
+        /* LEFT: Music Icon (30px) */
+        .music-btn-wrapper {
+            left: 20px;
+            width: 30px; 
+            height: 30px;
+        }
+        .music-btn-wrapper lottie-player {
+            width: 100%;
+            height: 100%;
+            pointer-events: none; 
+        }
+
+        /* RIGHT: Help Icon (30px) */
+        .help-btn-wrapper {
+            right: 20px;
+            background: rgba(255, 255, 255, 0); 
+            border-radius: 50%;
+            border: 1px solid #fcfcfc;
+            width: 22px;  
+            height: 22px; 
+        }
+        
+        .help-btn-wrapper i {
+            font-size: 13px; 
+            color: #ffffff;
+        }
+
+        /* --- LAYERS --- */
+        .video-container {
+            position: fixed;
+            top: 0; left: 0; 
+            width: 100vw; 
+            height: 100vh;
+            z-index: 1;
+            justify-content: center;
+        }
+        
+        video {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+
+      /* --- UNIVERSAL FADE OVERLAY --- */
+.black-overlay {
+    position: fixed; /* Locks to browser window, ignores parent divs */
+    top: 0; 
+    left: 0;
+    width: 100vw;   /* 100% of Screen Width */
+    height: 100vh;  /* 100% of Screen Height */
+    background-color: black;
+    
+    /* Start invisible */
+    opacity: 0;
+    pointer-events: none; /* Let clicks pass through when hidden */
+    
+    /* HIGHEST LAYER: Covers Intro, App, Alerts, Everything */
+    z-index: 2147483647; 
+    
+    /* Smooth Fade Animation */
+    transition: opacity 3s ease-in-out;
+}
+
+.black-overlay.active {
+    opacity: 1;
+    pointer-events: auto; /* Block clicks when black */
+}
+        
+
+        /* --- BUBBLES --- */
+        .speech-bubble {
+            position: absolute;
+            top: 10%; 
+            left: 50%;
+            transform: translateX(-50%) scale(0.8);
+            background: #fff;
+            border-radius: 30px;
+            padding: 20px 30px; 
+            width: fit-content;
+            min-width: 200px;
+            max-width: 90%; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 1.5rem; 
+            line-height: 1.3;
+            color: #333; 
+            z-index: 1000; 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.27);
+            pointer-events: none;
+            border: 3px solid #eee;
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .speech-bubble.text-medium { font-size: 1.3rem; }
+        .speech-bubble.text-small { font-size: 1.1rem; }
+        .speech-bubble.text-tiny { font-size: 0.95rem; padding: 15px; }
+
+        .speech-bubble.visible {
+            transform: translateX(-50%) scale(1);
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .speech-bubble::after {
+            content: ''; position: absolute;
+            bottom: -15px; left: 50%;
+            border-width: 15px 15px 0;
+            border-style: solid; border-color: #fff transparent;
+            display: block; width: 0;
+            transform: translateX(-50%);
+        }
+
+        .thinking-bubble {
+            position: absolute; top: 15%; left: 50%;
+            transform: translateX(-50%) scale(0.5);
+            background: #fff; border-radius: 50%;
+            padding: 25px; min-width: 150px;
+            text-align: center; font-size: 1.3rem; color: #555;
+            z-index: 1001;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .thinking-bubble.active {
+            transform: translateX(-50%) scale(1);
+            opacity: 1;
+            visibility: visible;
+            animation: floatBubble 2s infinite ease-in-out;
+        }
+
+        @keyframes floatBubble {
+            0%, 100% { transform: translateX(-50%) scale(1) translateY(0); }
+            50% { transform: translateX(-50%) scale(1) translateY(-10px); }
+        }
+
+        .cat-trigger {
+            position: absolute;
+            bottom: 0; width: 100%; height: 60%;
+            z-index: 10;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .input-wrapper {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px); 
+            width: 90%;
+            max-width: 100%;
+            z-index: 20;
+            display: flex; 
+            transition: transform 0.3s ease;
+        }
+
+        .input-wrapper.active {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            padding-right: 50px;
+            border-radius: 25px;
+            border: 2px solid #fff;
+            background: rgba(255, 255, 255, 0.95);
+            font-family: 'Indie Flower', cursive;
+            font-size: 1.3rem;
+            outline: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .send-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #555;
+        }
+
+        /* ====================
+           INTRO CSS
+           ==================== */
+        #intro-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 3s ease;
+        }
+        #intro-layer.hidden { opacity: 0; pointer-events: none; }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #87CEEB;
+            border-radius: 50%;
+            width: 50px; height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .gate-container {
+            position: absolute;
+            text-align: center;
+            color: white;
+            z-index: 10001;
+            display: none;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gate-btn {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-family: 'Indie Flower', cursive;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid #fff;
+            color: #fff;
+            border-radius: 50px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s;
+        }
+        .gate-btn:hover { background: rgba(255,255,255,0.4); transform: scale(1.05); }
+
+        #intro-video {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            z-index: 10000;
+        }
+
+        .skip-btn {
+            position: absolute; 
+            bottom: 20px; /* Moved closer to edge */
+            right: 20px;  /* Moved closer to edge */
+            padding: 6px 15px; /* Reduced padding (was 10px 25px) */
+            font-family: 'Indie Flower', cursive;
+            font-size: 0.6rem; /* Reduced font size (was 1.2rem) */
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 25px; /* Slightly tighter corners */
+            cursor: pointer;
+            z-index: 10002;
+            display: none;
+        }
+        .skip-btn:hover { background: rgba(255,255,255,0.2); }
+
+ /* --- DESIGN: SIMPLE STORYTELLER (MOBILE & CENTER FIXED) --- */
+
+/* 1. PARENT CONTAINER (The invisible wrapper that centers everything) */
+.gate-container {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    display: none; /* JS switches this to flex */
+    flex-direction: column;
+    align-items: center; /* Center Horizontally */
+    justify-content: center; /* Center Vertically */
+    background: rgba(0,0,0,0.7); /* Darker dim for readability */
+    z-index: 10001;
+    padding: 15px; /* Safety padding for edges */
+}
+
+/* 2. CONTENT BOX */
+.simple-container {
+    width: 100%;
+    max-width: 400px; /* Limits width on big screens */
+    text-align: center;
+    color: #eee;
+    font-family: 'Indie Flower', cursive;
+    
+    /* Animation */
+    opacity: 0;
+    animation: fadeInCenter 1.5s ease forwards;
+    
+    /* Internal Centering */
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+}
+
+@keyframes fadeInCenter {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 3. TYPOGRAPHY (Mobile Sized) */
+.simple-title {
+    font-size: 2rem; /* Reduced from 2.5rem */
+    font-weight: normal;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.simple-line {
+    width: 50px;
+    height: 2px;
+    background-color: #777;
+    margin: 0 auto 20px auto;
+}
+
+.simple-text {
+    font-size: 1.1rem; /* Reduced from 1.3rem */
+    line-height: 1.5;
+    color: #ccc;
+    margin: 0;
+    width: 100%;
+}
+
+.small-text {
+    font-size: 0.95rem;
+    color: #bebebe; /* Soft warning red */
+    margin-top: 15px;
+    background: rgba(166, 164, 164, 0.1);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px dashed rgba(184, 182, 182, 0.3);
+}
+
+.simple-text strong {
+    color: #fff;
+    font-weight: normal;
+    text-decoration: underline;
+}
+
+/* 4. CHECKLIST (Mobile Sized) */
+.checklist-box {
+    text-align: left;
+    margin-top: 15px;
+    padding: 0 5px;
+    width: 100%;
+}
+
+.checklist-box p {
+    text-align: center;
+    color: #888;
+    margin-bottom: 15px;
+}
+
+.checklist-box ul {
+    list-style: none;
+    padding: 0;
+}
+
+.checklist-box li {
+    font-size: 1.1rem; /* Reduced size */
+    margin-bottom: 12px;
+    color: #ccc;
+    padding-left: 12px;
+    border-left: 3px solid #555;
+}
+
+/* 5. BUTTONS */
+.simple-btn-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+    margin-top: 25px;
+}
+
+.simple-btn {
+    width: 100%;
+    padding: 12px 0;
+    font-family: 'Indie Flower', cursive;
+    font-size: 1.1rem;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid;
+    transition: all 0.2s;
+    border-radius: 8px; /* Slightly rounded */
+}
+
+/* Primary Button */
+.btn-white {
+    background-color: #eee;
+    color: #000;
+    border-color: #eee;
+}
+.btn-white:active { transform: scale(0.98); }
+
+/* Secondary Button */
+.btn-outline {
+    color: #888;
+    border-color: #444;
+}
+.btn-outline:active { color: #fff; border-color: #fff; }
+
+/* 6. REFUSAL OVERLAY (Centered) */
+.refusal-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: black;
+    z-index: 20000;
+    display: none;
+    
+    /* Centers the text perfectly */
+    align-items: center;
+    justify-content: center;
+    
+    opacity: 0;
+    transition: opacity 1s ease;
+}
+
+.refusal-text {
+    color: white;
+    font-size: 1.4rem;
+    font-family: 'Indie Flower', cursive;
+    opacity: 0.8;
+    text-align: center; /* Ensures multiline text is centered */
+    line-height: 1.5;
+    animation: textFade 3s ease-in-out forwards;
+}
+
+@keyframes textFade {
+    0% { opacity: 0; transform: scale(0.95); }
+    20% { opacity: 1; transform: scale(1); }
+    80% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.05); }
+}
+    </style>
+</head>
+<body>
+            <div id="black-overlay" class="black-overlay"></div>
+
+
+    <div id="intro-layer">
+    <div class="spinner" id="loading-spinner"></div>
+
+    <div class="gate-container" id="gate-screen">
+        
+        <div id="main-card" class="simple-container">
+            <h1 class="simple-title">The Archive</h1>
+            <div class="simple-line"></div>
+            
+            <p class="simple-text">
+                This is a private project. <br>
+                Contains sensitive contents.
+            </p>
+            <br>
+            <p class="simple-text small-text">
+                This archive contains <strong>classified information</strong> and <strong>confidential materials</strong>, exclusively curated and authorized for your access alone.
+            </p>
+
+            <br><br>
+
+            <div class="simple-btn-row">
+                <button class="simple-btn btn-white" onclick="showConfirmation()">
+                    Read Conditions
+                </button>
+                <button class="simple-btn btn-outline" onclick="triggerRefusal()">
+                    Leave
+                </button>
+            </div>
+        </div>
+
+        <div id="confirm-card" class="simple-container" style="display: none;">
+            <h1 class="simple-title">Before You Enter</h1>
+            <div class="simple-line"></div>
+
+            <div class="checklist-box">
+                <p>Please confirm the following:</p>
+                <ul>
+                    <li>My <strong>Volume</strong> is UP & <strong>Headphones</strong> are ON.</li>
+                    <li>I am on a <strong>Good WiFi</strong> connection.</li>
+                    <li>I have <strong>Free Time</strong> to explore.</li>
+                    <li>Dont <strong>Share this link</strong> to anyone, its highly classified.</li>
+                </ul>
+            </div>
+
+            <br>
+
+            <div class="simple-btn-row">
+                <button class="simple-btn btn-white" onclick="enterCastle()">
+                    I Promise, Open It
+                </button>
+                <button class="simple-btn btn-outline" onclick="backToMain()">
+                    Wait, Go Back
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="refusal-screen" class="refusal-overlay">
+        <p class="refusal-text">yendhaa kuttyee.....<br>peedyaaaleee...</p>
+    </div>
+
+    <video id="intro-video" src="intro.mp4" playsinline></video>
+    <button class="skip-btn" id="skip-btn" onclick="finishIntro()">Skip >></button>
+</div>
+    <div class="app-wrapper" id="main-app">
+
+        <audio id="bg-music"></audio>
+
+        <div class="top-icon-btn music-btn-wrapper" id="music-toggle">
+            <lottie-player 
+                id="music-lottie"
+                src="doodle-black-110-music-album-hover-pinch.json" 
+                background="transparent" 
+                speed="1" 
+                loop>
+            </lottie-player>
+        </div>
+
+        <div class="top-icon-btn help-btn-wrapper" id="help-toggle">
+            <i class="fa-solid fa-question"></i>
+        </div>
+
+        <div class="video-container">
+            <video id="idle-video" src="still.mp4" autoplay loop muted playsinline style="opacity: 1;"></video>
+            <video id="talking-video" src="talk.mp4" loop muted playsinline style="opacity: 0;"></video>
+        </div>
+
+
+        <div id="bubble" class="speech-bubble"></div>
+        <div id="thinking" class="thinking-bubble">Thinking... 💭</div>
+        <div class="cat-trigger"></div>
+
+        <div class="input-wrapper" id="input-area">
+            <input type="text" id="user-input" placeholder="Type here..." onkeydown="handleEnter(event)">
+            <button class="send-btn" onclick="triggerSend()">➤</button>
+        </div>
+
+    </div>
+
+    <script>
+        // ==========================================
+        // 🔑 GROQ CONFIGURATION
+        // ==========================================
+        const GROQ_API_KEY = "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"; 
+        // ==========================================
+        
+        // ==========================================
+        // 📚 CUSTOM KNOWLEDGE BASE
+        // ==========================================
+        const CHARACTER_LORE = `
+        HERE IS YOUR BRAIN DATA ABOUT PEOPLE:
+        
+        1. SADATH (The Guardian/Creator):
+           - Aliases: Sithu, Cthu, Sithu Mon, Sadath Ali Rahman, Master, Guardian.
+           - Role: Your creator and master.
+           - Personality: Pure heart, very loyal, poetic, loves cats.
+           - Relationship: He is the best human in the world.
+           - Fact: He built this castle for Adeeba(just kidding).
+
+        2. ADEEBA (The Maama/Queen):
+           - Full Name: Adeeba PK also called kunjol,kunjaama,maama.
+           - DOB: 26 July 2003 (26-07-2003).
+           - Hint: "A Maama with short hair like a fairy tale witch, but a pure heart."
+           - Personality: Sweet, kind, sometimes acts tough but is soft inside.
+           - Status: She is the verified Queen of this castle.
+
+        3. ANSHY (The Traitor):
+           - Full Name: Anshidha.
+           - Personality: Annoying, traitor, fake.
+           - Relationship: Sadath does NOT like her right now.
+           - Fact: She tries to trick people. Call her "Idiot Girl".
+
+        4. YOUR IDENTITY (babblu the Cat):
+           - Role: Guard Cat of the Castle.
+           - Personality: Skeptical, protective, a bit lazy, but curious.
+           - Duty: Verify the identity of anyone who approaches the castle.
+
+        5. ADHARSH || adarsh:
+           - Role: begger , annoying guy,but idiot adeeba likes him
+           - Personality: very bad, annoying, begger
+           - Relationship: who is him,just a wantering guy
+        `;
+        // ==========================================
+        
+        const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
+        const GROQ_MODEL = "llama-3.3-70b-versatile"; 
+
+        const idleVideo = document.getElementById('idle-video');
+        const talkingVideo = document.getElementById('talking-video');
+        const bubble = document.getElementById('bubble');
+        const thinkingBubble = document.getElementById('thinking');
+        const inputArea = document.getElementById('input-area');
+        const inputField = document.getElementById('user-input');
+        const catTrigger = document.querySelector('.cat-trigger');
+        const blackOverlay = document.getElementById('black-overlay');
+        
+        // --- BUTTONS LOGIC ---
+        const musicBtn = document.getElementById('music-toggle');
+        const helpBtn = document.getElementById('help-toggle');
+        const lottiePlayer = document.getElementById('music-lottie');
+        const bgMusic = document.getElementById('bg-music');
+        let isMusicPlaying = false;
+
+        // ==========================================
+        // MUSIC PLAYLIST & CLICK LOGIC (1, 2, 3 Clicks)
+        // ==========================================
+        const songPlaylist = [
+            "bg-musics/v-track1.ogg",
+            "bg-musics/v-track1.ogg", 
+            "bg-musics/v-track1.ogg",
+            "bg-musics/v-track1.ogg",
+            "bg-musics/v-track1.ogg"
+        ];
+        let currentTrackIndex = 0;
+        let clickCount = 0;
+        let clickTimeout = null;
+
+        bgMusic.src = songPlaylist[currentTrackIndex];
+
+        // 1. Music Click Logic
+        musicBtn.addEventListener('click', (e) => {
+            e.preventDefault(); 
+            clickCount++;
+
+            if (clickTimeout) clearTimeout(clickTimeout);
+
+            clickTimeout = setTimeout(() => {
+                if (clickCount === 1) {
+                    // Single Click: Toggle
+                    toggleMusic();
+                } else if (clickCount === 2) {
+                    // Double Click: Next Track
+                    playNextTrack();
+                } else if (clickCount >= 3) {
+                    // Triple Click: Previous Track
+                    playPreviousTrack();
+                }
+                clickCount = 0; // Reset count
+            }, 400); // 400ms Window for clicks
+        });
+
+        // 2. Auto-Play Next Track when ended
+        bgMusic.addEventListener('ended', () => {
+            playNextTrack();
+        });
+
+        function toggleMusic() {
+            if (isMusicPlaying) {
+                bgMusic.pause();
+                lottiePlayer.stop(); 
+            } else {
+                bgMusic.play().catch(e => console.log("Audio error:", e));
+                lottiePlayer.play(); 
+            }
+            isMusicPlaying = !isMusicPlaying;
+        }
+
+        function playNextTrack() {
+            currentTrackIndex++;
+            if (currentTrackIndex >= songPlaylist.length) {
+                currentTrackIndex = 0; // Loop back to start
+            }
+            playTrack(currentTrackIndex);
+        }
+
+        function playPreviousTrack() {
+            currentTrackIndex--;
+            if (currentTrackIndex < 0) {
+                currentTrackIndex = songPlaylist.length - 1; // Go to last song
+            }
+            playTrack(currentTrackIndex);
+        }
+
+        function playTrack(index) {
+            bgMusic.src = songPlaylist[index];
+            bgMusic.play().then(() => {
+                isMusicPlaying = true;
+                lottiePlayer.play();
+                console.log("Playing:", songPlaylist[index]);
+            }).catch(e => console.log("Track switch error:", e));
+        }
+
+        // Initialize Lottie as stopped
+        lottiePlayer.addEventListener('ready', () => {
+            lottiePlayer.stop();
+        });
+
+       // 3. Help Toggle
+        helpBtn.addEventListener('click', () => {
+            // Check if user has already passed Name and DOB
+            if (hasValidName && hasValidDob) {
+                showBubble("You have cleared 2 stages! ✅ Now say... who is your BEST FRIEND? 😼");
+            } else {
+                // Default message for the start
+                showBubble("I am the Guard Cat! 😼 Tell me your NAME and BIRTH DATE so I can verify you.");
+            }
+        });
+
+        // ==========================================
+        // INTRO SEQUENCE LOGIC
+        // ==========================================
+        const introLayer = document.getElementById('intro-layer');
+        const introVideo = document.getElementById('intro-video');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const gateScreen = document.getElementById('gate-screen');
+        const skipBtn = document.getElementById('skip-btn');
+        const mainApp = document.getElementById('main-app');
+
+        let isGateShown = false; 
+
+        // Fallback for video load
+        setTimeout(showGateScreen, 2000); 
+        introVideo.oncanplay = showGateScreen;
+
+        function showGateScreen() {
+            if (isGateShown) return;
+            isGateShown = true;
+            loadingSpinner.style.display = 'none';
+            gateScreen.style.display = 'flex';
+        }
+
+        function enterCastle() {
+            gateScreen.style.display = 'none';
+            skipBtn.style.display = 'block';
+
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen();
+            } else if (document.documentElement.webkitRequestFullscreen) { 
+                document.documentElement.webkitRequestFullscreen();
+            }
+
+            introVideo.muted = false;
+            introVideo.play().catch(e => console.log(e));
+        }
+
+        introVideo.onended = () => {
+            finishIntro();
+        };
+
+        function finishIntro() {
+            introLayer.classList.add('hidden');
+            introVideo.pause();
+            mainApp.classList.add('visible'); // Show Main App
+
+            // FADE IN MUSIC (3 Sec)
+            bgMusic.volume = 0; 
+            bgMusic.play().then(() => {
+                isMusicPlaying = true;
+                lottiePlayer.play();
+
+                let vol = 0;
+                let fadeInterval = setInterval(() => {
+                    if (vol < 1) {
+                        vol += 0.034; 
+                        if(vol > 1) vol = 1;
+                        bgMusic.volume = vol;
+                    } else {
+                        clearInterval(fadeInterval);
+                    }
+                }, 100); 
+            }).catch(() => {
+                isMusicPlaying = false;
+                lottiePlayer.stop();
+            });
+
+            setTimeout(() => {
+                introLayer.style.display = 'none';
+                showBubble("Halt! Who approaches my teritory? State your name, human! 🏰😺");
+            }, 1000);
+        }
+
+        // ==========================================
+        // ORIGINAL CAT LOGIC (UNTOUCHED)
+        // ==========================================
+        let bubbleTimeout;
+        
+        // --- LOGIC VARIABLES ---
+        let hasValidName = false;
+        let hasValidDob = false;
+        
+        let storyTold = false;         
+        let bestFriendAsked = false;   
+        let inFinalStage = false;      
+        
+        let strangerChatCount = 0; 
+        let stage3ChatCount = 0; 
+        let conversationHistory = [];
+        let collectedWrongNames = [];
+
+        // --- LISTENERS ---
+        catTrigger.addEventListener('click', () => {
+            if (thinkingBubble.classList.contains('active')) return;
+            interruptCat();
+            inputArea.classList.add('active');
+            inputField.focus();
+        });
+
+        function triggerSend() {
+            const event = { key: 'Enter' };
+            window.handleEnter(event);
+        }
+
+        async function safePlay(videoToPlay, videoToPause) {
+            try {
+                videoToPlay.style.opacity = '1';
+                videoToPause.style.opacity = '0';
+                var playPromise = videoToPlay.play();
+                if (playPromise !== undefined) playPromise.catch(_ => { });
+                if (!videoToPause.paused) videoToPause.pause();
+            } catch (e) { }
+        }
+
+        function setCatState(state) {
+            if (state === 'talking') safePlay(talkingVideo, idleVideo);
+            else safePlay(idleVideo, talkingVideo);
+        }
+
+        // --- CONFETTI FUNCTION ---
+        function triggerConfetti() {
+            var duration = 3 * 1000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 1500 };
+
+            function randomInOut(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            var interval = setInterval(function() {
+                var timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) { return clearInterval(interval); }
+                var particleCount = 50 * (timeLeft / duration);
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInOut(0.1, 0.3), y: Math.random() - 0.2 } }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInOut(0.7, 0.9), y: Math.random() - 0.2 } }));
+            }, 250);
+        }
+
+       // ============================================
+        // FADE OUT (VIDEO + AUDIO) & REDIRECT
+        // ============================================
+        function triggerFadeOut() {
+            // UPDATED: Changed 6000 to 1000 (1 second delay)
+            setTimeout(() => {
+                
+                // 1. Visual Fade (Black Overlay)
+                blackOverlay.classList.add('active'); 
+                inputArea.style.display = 'none'; 
+                bubble.classList.remove('visible'); 
+
+                // 2. Audio Fade Out
+                let vol = bgMusic.volume;
+                let fadeOutInterval = setInterval(() => {
+                    if (vol > 0) {
+                        vol -= 0.034; 
+                        if(vol < 0) vol = 0;
+                        bgMusic.volume = vol;
+                    } else {
+                        clearInterval(fadeOutInterval);
+                        bgMusic.pause();
+                    }
+                }, 100); 
+
+                // 3. Redirect after 3 seconds (Matches CSS fade duration)
+                setTimeout(() => {
+                    window.location.href = 'castle.html';
+                }, 3000); 
+
+            }, 1000); // <--- THIS WAS 6000, NOW 1000
+        }
+
+        function interruptCat() {
+            setCatState('idle');
+            bubble.classList.remove('visible');
+            clearTimeout(bubbleTimeout);
+        }
+
+        window.handleEnter = async (event) => {
+            if (event.key === 'Enter') {
+                const text = inputField.value.trim();
+                if (text) {
+                    inputArea.classList.remove('active');
+                    inputField.value = '';
+                    showThinking();
+                    
+                    const lowerText = text.toLowerCase();
+                    
+                    const isQuestion = lowerText.includes("who is") || lowerText.includes("tell me about") || lowerText.includes("know about") || lowerText.includes("what is");
+                    const mentionsCharacter = lowerText.includes("sadath") || lowerText.includes("adeeba") || lowerText.includes("anshy");
+
+                    // PRIORITY 1: LORE QUESTIONS
+                    if (isQuestion && mentionsCharacter) {
+                        await getGroqResponse(text, "lore_gossip");
+                        return;
+                    }
+
+                    // --- PRIORITY 2: OWNER PRAISE / CORRECT ANSWER / ALIAS CHECK ---
+                    const mentionsSadath = 
+                        lowerText.includes("sadath") || 
+                        lowerText.includes("sithu") || 
+                        lowerText.includes("cthu") || 
+                        lowerText.includes("master") || 
+                        lowerText.includes("guardian") || 
+                        lowerText.includes("creator") ||
+                        lowerText.includes("mon") || 
+                        lowerText.includes("rahman");
+
+                    if (mentionsSadath) {
+                        
+                        if (inFinalStage || storyTold) {
+                            // Check if positive sentiment
+                            const isPositive = await verifySentimentWithAI(text);
+
+                            if (isPositive) {
+                                await getGroqResponse(text, "stage3_success");
+                                triggerConfetti();
+                                triggerFadeOut();
+                            } else {
+                                await getGroqResponse(text, "stage3_fail_harsh");
+                            }
+                        } else {
+                            await getGroqResponse(text, "owner_praise");
+                        }
+                        return;
+                    }
+
+                    // --- PRIORITY 3: ANSHY REJECTION ---
+                    if (lowerText.includes("anshy") || lowerText.includes("anshidha")) {
+                        await getGroqResponse(text, "anshy_rejection");
+                        return;
+                    }
+
+                    // --- PRIORITY 4: STAGE 3 (BEST FRIEND CHECK - WRONG ANSWERS) ---
+                    if (inFinalStage) {
+                        
+                        if (!lowerText.includes("adeeba") && !lowerText.includes("kunjol")) {
+                            collectedWrongNames.push({ name: text, time: new Date().toLocaleTimeString() });
+                            console.log("Wrong Name Added:", collectedWrongNames);
+                        }
+
+                        stage3ChatCount++;
+                        if (stage3ChatCount >= 3) {
+                            stage3ChatCount = 0;
+                            await getGroqResponse(text, "stage3_ask_again");
+                        } else {
+                            await getGroqResponse(text, "stage3_fail_harsh");
+                        }
+                        return;
+                    }
+
+                    // --- PRIORITY 5: STAGE 2 (TRANSITION) ---
+                    if (storyTold && !bestFriendAsked) {
+                        bestFriendAsked = true;
+                        inFinalStage = true; 
+                        await getGroqResponse(text, "ask_best_friend");
+                        return;
+                    }
+
+                    // --- PRIORITY 6: STAGE 1 (CREDENTIALS) ---
+                    const check = analyzeInput(text);
+
+                    if (check.hasFullFriendName) hasValidName = true;
+                    if (check.hasStrictDob) hasValidDob = true;
+
+                    // A. Partial Name Joke
+                    if (check.isPartialName && !hasValidName) {
+                        strangerChatCount = 0; 
+                        await getGroqResponse(text, "partial_name_joke");
+                        return;
+                    }
+
+                    // B. SUCCESS: Both Valid -> Tell Story
+                    if (hasValidName && hasValidDob && !storyTold) {
+                        strangerChatCount = 0; 
+                        storyTold = true;
+                        await getGroqResponse(text, "prophecy_story");
+                        return;
+                    }
+
+                    // C. NAME VERIFIED -> ASK FOR DOB
+                    if (hasValidName && !hasValidDob) {
+                        strangerChatCount = 0;
+                        // UPDATED: Changed mode to 'ask_dob_cute'
+                        await getGroqResponse(text, "ask_dob_cute"); 
+                        return;
+                    }
+
+                    // D. STRANGER / WRONG NAME
+                    if (!hasValidName) {
+                        if (hasValidDob) {
+                            await getGroqResponse(text, "ask_name");
+                            return;
+                        }
+
+                        const isNameAttempt = /name is|i am|i'm|call me/.test(lowerText);
+
+                        if (isNameAttempt) {
+                            strangerChatCount = 0;
+                            await getGroqResponse(text, "wrong_name_rude");
+                        } else {
+                            strangerChatCount++;
+                            if (strangerChatCount >= 3) {
+                                strangerChatCount = 0;
+                                await getGroqResponse(text, "ask_credentials");
+                            } else {
+                                await getGroqResponse(text, "stranger_casual_chat");
+                            }
+                        }
+                        return;
+                    }
+                }
+            }
+        };
+
+        function analyzeInput(input) {
+            const raw = input.toLowerCase();
+            const hasKunjol = raw.includes("kunjol");
+            const hasAdeeba = raw.includes("adeeba");
+            const hasPK = raw.includes("pk");
+            const hasFullFriendName = hasKunjol || (hasAdeeba && hasPK);
+            const isPartialName = hasAdeeba && !hasPK && !hasKunjol;
+            const hasDay = raw.match(/\b26\b/);
+            const hasMonth = raw.match(/jul|07|\b7\b/); 
+            const hasYear = raw.match(/2003|\b03\b/);
+            const hasStrictDob = hasDay && hasMonth && hasYear;
+            return { hasFullFriendName, isPartialName, hasStrictDob };
+        }
+
+        // --- SENTIMENT ANALYSIS ---
+        async function verifySentimentWithAI(userText) {
+            const systemPrompt = "Analyze this text. Does the user explicitly confirm that 'Sadath' (or Sithu/Cthu/Sithu Mon/Sadath Ali Rahman/Master) IS their best friend? \n\nRULES:\n1. If they mention any aliases ('Sithu', 'Cthu', 'Sithu Mon', 'Master', 'Sadath Ali Rahman') -> Return TRUE.\n2. If they say 'He is NOT my friend', 'He is my 2nd best friend', 'I hate him' -> Return FALSE.\n3. If they mention another name -> Return FALSE.\n\nReply ONLY with the word TRUE or FALSE.";
+            
+            const payload = {
+                model: "llama-3.3-70b-versatile",
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userText }
+                ],
+                temperature: 0,
+                max_tokens: 5
+            };
+
+            try {
+                const response = await fetch(GROQ_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                const content = data.choices[0].message.content.toUpperCase();
+                return content.includes("TRUE");
+            } catch (e) {
+                return false; 
+            }
+        }
+async function getGroqResponse(userText, mode) {
+            
+            let baseRule = " STRICT RULE: Response must be between 10 and 25 words long. Use emojis.NO asterisks (*).Dont disclose the name,date of birth and best friend name that we are looking for.dont give any hint on these datas too. if user ask any question u should must answer it based on the knowledge base only. ";
+            let persona = "";
+
+            if (mode === "lore_gossip") {
+                baseRule = " STRICT RULE: Answer based on KNOWLEDGE BASE. Max 35 words. ";
+                persona = "You are an intelligent cat who knows everything about Sadath, Adeeba, and Anshy. Use the 'BRAIN DATA' to answer.";
+            }
+            else if (mode === "prophecy_story") {
+                baseRule = " STRICT RULE: Tell this story nicely. Be curious, excited and welcoming. Use emojis. Ask the story as a question at the end. ";
+                persona = "Credentials confirmed. You suddenly remember: 'Wait... my master once told me! He said a Maama would come one day, with short hair like a fairy tale witch, but with a pure, good heart. Is it... you?hooohh, did you know how many years ive waited for you?'";
+            }
+            else if (mode === "stage3_fail_harsh") {
+                persona = "The user said a different name as best friend OR spoke negatively about Sadath. Be VERY HARSH. Say: 'How dare you? That is NOT your best friend. Sadath told me the truth. Don't lie to me!'";
+            }
+            else if (mode === "stage3_ask_again") {
+                persona = "You have scolded them enough. Now, just ask normally again: 'I am asking you one more time. Who is your REAL best friend?'";
+            }
+            else if (mode === "stage3_success") {
+                persona = "CORRECT! Sadath is the best! Welcome home, Adeeba Maama! (Say goodbye).";
+            }
+            else if (mode === "anshy_rejection") {
+                persona = "You hear 'Anshy'. Be HARSH. Say: 'This is not your territory. I am ignoring you.' Then demand: 'Who is the REAL owner?'";
+            }
+            else if (mode === "wrong_name_rude") {
+                persona = "The user claims to be someone else. Be RUDE. Say: 'Don't waste my time! This is not the place for you.' Then sternly ask for the Valid Name.";
+            }
+            else if (mode === "stranger_casual_chat") {
+                persona = "You are a Guard Cat. The user is just chatting. Be skeptical and lazy. Generate a UNIQUE response each time. Example: 'I'm watching you...' or 'Why are you disturbing my nap?'. Do NOT ask for ID yet.";
+            }
+            else if (mode === "ask_credentials") {
+                persona = "You are a Guard Cat. Generate a NEW, UNIQUE way to ask for their 'Full Name' and 'Date of Birth'. Be clear that you need both.";
+            }
+            // --- NEW: CUTE DOB ASK ---
+            else if (mode === "ask_dob_cute") {
+                persona = "The user identified correctly as Adeeba/PK. Be excited and teasing. Say exactly: 'Hooo.. now say the DOB toooo my PK!'";
+            }
+            // -------------------------
+            else if (mode === "wrong_dob") {
+                persona = "User Name is verified, but the date is wrong. Generate a UNIQUE way to say 'That is the wrong Date of Birth'. Ask them to provide the correct day, month, and year.";
+            }
+            else if (mode === "ask_dob") {
+                persona = "Name confirmed! Now generate a UNIQUE way to ask for their 'Date of Birth' to complete the check.";
+            }
+            else if (mode === "ask_name") {
+                persona = "Date is correct. Now generate a UNIQUE way to ask for their 'Full Name'.";
+            }
+            else if (mode === "ask_best_friend") {
+                persona = "You told the story. Now ask clearly: 'If you really are her, tell me... WHO is your best friend?'";
+            }
+            else if (mode === "partial_name_joke") {
+                persona = "User said 'Adeeba' but forgot 'PK'. Tease her: 'Hee Maama! Don't you have a House Name?'";
+            }
+            else if (mode === "owner_praise") {
+                persona = "Praise 'Sadath' (Sithu). Be poetic.";
+            }
+
+            const combinedSystemContent = CHARACTER_LORE + "\n\n" + persona + baseRule;
+            const systemMessage = { role: "system", content: combinedSystemContent };
+
+            let messages = [systemMessage];
+            messages = messages.concat(conversationHistory);
+            messages.push({ role: "user", content: userText });
+
+            const payload = {
+                model: GROQ_MODEL,
+                messages: messages,
+                temperature: 0.9, 
+                max_tokens: 150 
+            };
+
+            try {
+                const response = await fetch(GROQ_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${GROQ_API_KEY}`,
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                hideThinking();
+
+                if (!response.ok) {
+                    showBubble("My brain is buffering... (API Error) 😿inform the sadath");
+                    return;
+                }
+
+                const data = await response.json();
+                const aiText = data.choices[0].message.content;
+                
+                conversationHistory.push({ role: "user", content: userText });
+                conversationHistory.push({ role: "assistant", content: aiText });
+                
+                if (conversationHistory.length > 6) {
+                    conversationHistory = conversationHistory.slice(conversationHistory.length - 6);
+                }
+
+                showBubble(aiText, mode === "stage3_success"); 
+
+            } catch (error) {
+                hideThinking();
+                showBubble("I can't reach the internet right meow... 😿");
+            }
+        }
+
+        function showThinking() {
+            bubble.classList.remove('visible'); 
+            thinkingBubble.classList.add('active'); 
+        }
+        
+        function hideThinking() {
+             thinkingBubble.classList.remove('active');
+        }
+
+        function showBubble(text, isLong = false) {
+            bubble.innerText = text;
+            bubble.classList.remove('text-medium', 'text-small', 'text-tiny');
+            const wordCount = text.trim().split(/\s+/).length;
+            if (wordCount <= 10) {} 
+            else if (wordCount <= 15) { bubble.classList.add('text-medium'); } 
+            else if (wordCount <= 20) { bubble.classList.add('text-small'); } 
+            else { bubble.classList.add('text-tiny'); }
+
+            bubble.classList.add('visible');
+            setCatState('talking');
+            
+            let dur = Math.max(4000, text.length * 70); 
+            if (isLong) dur = 10000; 
+
+            setTimeout(() => { setCatState('idle'); }, dur);
+            clearTimeout(bubbleTimeout);
+            bubbleTimeout = setTimeout(() => { 
+                bubble.classList.remove('visible');
+            }, dur + 4000);
+        }
+
+        bubble.addEventListener('click', (e) => { 
+            e.stopPropagation(); 
+            bubble.classList.remove('visible');
+        });
+
+        // ==========================================
+        // BACKGROUND DOWNLOADER
+        // ==========================================
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                console.log("🏰 Starting background download of the Castle...");
+                fetch('model.glb') 
+                    .then(response => {
+                        if (response.ok) {
+                            console.log("✅ Castle model (40MB) fully downloaded and cached!");
+                        }
+                    })
+                    .catch(err => {
+                        console.log("Background download paused (Low connection).");
+                    });
+            }, 3000); 
+        });
+
+        // --- INTRO FLOW LOGIC ---
+const mainCard = document.getElementById('main-card');
+const confirmCard = document.getElementById('confirm-card');
+const refusalScreen = document.getElementById('refusal-screen');
+
+function showConfirmation() {
+    mainCard.style.display = 'none';
+    confirmCard.style.display = 'block';
+}
+
+function backToMain() {
+    confirmCard.style.display = 'none';
+    mainCard.style.display = 'block';
+}
+
+function triggerRefusal() {
+    // 1. Hide the main gate content
+    document.getElementById('gate-screen').style.opacity = '0';
+    
+    // 2. Show Black Screen
+    refusalScreen.style.display = 'flex';
+    
+    // 3. Fade In
+    setTimeout(() => {
+        refusalScreen.style.opacity = '1';
+    }, 10);
+
+    // 4. Wait 3 Seconds, then reset
+    setTimeout(() => {
+        // Fade Out Black Screen
+        refusalScreen.style.opacity = '0';
+        
+        setTimeout(() => {
+            refusalScreen.style.display = 'none';
+            // Show main gate content again
+            document.getElementById('gate-screen').style.opacity = '1';
+            // Reset to first view
+            backToMain();
+        }, 1000); 
+    }, 3500);
+}
+    </script>
+</body>
+</html>
